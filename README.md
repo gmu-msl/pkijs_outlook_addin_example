@@ -9,7 +9,7 @@ It should be noted that Microsoft does not currently support locally hosting a s
 This example will be "sideloaded" which means hosting the add-in locally and installing the add-in manifest into Outlook. This process is described by Microsoft in depth [here](https://docs.microsoft.com/en-us/office/dev/add-ins/outlook/sideload-outlook-add-ins-for-testing). Below are the basics of what you will need to do to achieve sideloading this add-in. It will be assumed you will be installing it via the browser for easy access to browser debugging/console tools.
 
 - Download this add-in:
-    - `git clone https://github.com/gmu-msl/smime-dane-outlook-addin`
+    - `git clone https://github.com/gmu-msl/pkijs_outlook_addin_example`
 
 - Install add-in
     - Begin composing a new email
@@ -39,6 +39,6 @@ The obvious first thought is that there might be some other differences between 
 
 ## Discussion
 
-If you have any ideas about what could be causing the difference in behavior and/or any potential fixes, please feel free to open an issue for discussion.
+If you have any ideas about what could be causing the difference in behavior and/or any potential fixes, please feel free to open an issue or discussion for discussion.
 
 Stack Overflow post: https://stackoverflow.com/questions/68060225/encryption-decryption-functions-working-differently-within-outlook-add-in-versus
