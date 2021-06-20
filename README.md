@@ -37,4 +37,8 @@ To attempt to decrypt, follow the same process except click `Decrypt current ema
 
 The obvious first thought is that there might be some other differences between what the add-in attempts to decrypt from the email body and what the original encryption output was, however that does not seem to be the case, nor issue. Within the `src/commands/commands.ts` file, you will find a section commented out starting at line 41 that demonstrates that even when the output from the smimeEncrypt() function is fed directly into the smimeDecrypt() function (exactly as in the unit tests), the same errors occur.
 
+## Discussion
+
 If you have any ideas about what could be causing the difference in behavior and/or any potential fixes, please feel free to open an issue for discussion.
+
+Stack Overflow post: https://stackoverflow.com/questions/68060225/encryption-decryption-functions-working-differently-within-outlook-add-in-versus
