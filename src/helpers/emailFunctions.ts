@@ -2,6 +2,7 @@ import { Crypto } from "@peculiar/webcrypto";
 import * as asn1js from "asn1js";
 import { Convert } from "pvtsutils";
 import * as pkijs from "pkijs";
+import * as forge from "node-forge";
 
 // Set crypto engine
 const crypto = new Crypto();
@@ -18,6 +19,51 @@ import MimeNode from "emailjs-mime-builder";
 import smimeParse from "emailjs-mime-parser";
 
 /**
+ * Adapted from https://github.com/digitalbazaar/forge#pkcs7
+ * @returns {string} encrypted string
+ * @param {string} text string to encrypt
+ * @param {string} certificatePem public certificate to encrypt with in PEM format
+ * @param {string} oaepHashAlgo algorithm to hash the text with (defaults to SHA-256)
+ * @param {string} encryptionAlgo algorithm to encrypt the text with ("AES-CBC" or "AES-GCM")
+ * @param {Number} length length to encrypt the text to (default 128)
+ */
+export async function smimeEncryptForge(
+  text: string,
+  certificatePem: string,
+  oaepHashAlgo: string = "SHA-256",
+  encryptionAlgo: string = "AES-CBC",
+  length: Number = 128
+): Promise<string> {
+  // create a p7 enveloped message
+  const p7 = forge.pkcs7.createEnvelopedData();
+
+  // add a recipient
+  const cert = forge.pki.certificateFromPem(certificatePem);
+  p7.addRecipient(cert);
+
+  // set content
+  p7.content = forge.util.createBuffer(text);
+
+  // encrypt
+  p7.encrypt();
+  let pem = forge.pkcs7.messageToPem(p7);
+  pem = pem.replace(/-----BEGIN PKCS7-----\r?\n?/, "");
+  pem = pem.replace(/-----END PKCS7-----\r?\n?/, "");
+
+  // Insert enveloped data into new Mime message
+  const mimeBuilder = new MimeNode("application/pkcs7-mime; name=smime.p7m; smime-type=enveloped-data; charset=binary")
+    .setHeader("content-description", "Enveloped Data")
+    .setHeader("content-disposition", "attachment; filename=smime.p7m")
+    .setHeader("content-transfer-encoding", "base64")
+    .setContent(pem);
+  mimeBuilder.setHeader("from", "sender@example.com");
+  mimeBuilder.setHeader("to", "recipient@example.com");
+  mimeBuilder.setHeader("subject", "Example S/MIME encrypted message");
+
+  return mimeBuilder.build();
+}
+
+/**
  * Adapted from PKI.js' SMIMEEncryptionExample
  * @returns {string} encrypted string
  * @param {string} text string to encrypt
@@ -26,7 +72,7 @@ import smimeParse from "emailjs-mime-parser";
  * @param {string} encryptionAlgo algorithm to encrypt the text with ("AES-CBC" or "AES-GCM")
  * @param {Number} length length to encrypt the text to (default 128)
  */
-export async function smimeEncrypt(
+export async function smimeEncryptPKIJs(
   text: string,
   certificatePem: string,
   oaepHashAlgo: string = "SHA-256",
@@ -62,6 +108,7 @@ export async function smimeEncrypt(
 
   return mimeBuilder.build();
 }
+
 /**
  * Adapted from PKI.js' SMIMEEncryptionExample
  * @returns {string} decrypted string
@@ -84,8 +131,12 @@ export async function smimeDecrypt(text: string, privateKeyPem: string, certific
     // Make all CMS data
     asn1 = asn1js.fromBER(parser.content.buffer);
     if (asn1.offset === -1) {
-      alert('Unable to parse your data. Please check you have "Content-Type: charset=binary" in your S/MIME message');
-      return;
+      console.error(
+        'Unable to parse your data. Please check you have "Content-Type: charset=binary" in your S/MIME message'
+      );
+      throw new Error(
+        'Unable to parse your data. Please check you have "Content-Type: charset=binary" in your S/MIME message'
+      );
     }
 
     const cmsContentSimpl = new pkijs.ContentInfo({ schema: asn1.result });

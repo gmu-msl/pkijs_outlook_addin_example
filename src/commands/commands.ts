@@ -5,7 +5,7 @@
 
 /* global global, Office, self, window */
 
-import { smimeDecrypt, smimeEncrypt } from "../helpers/emailFunctions";
+import { smimeDecrypt, smimeEncryptForge } from "../helpers/emailFunctions";
 import { decodeHtml } from "../helpers/converters";
 
 // Import the same cert and key used in the unit tests
@@ -34,7 +34,7 @@ async function encrypt(event: Office.AddinCommands.Event) {
     }
     let emailBody = result.value;
 
-    let encryptedText = await smimeEncrypt(emailBody, cert);
+    let encryptedText = await smimeEncryptForge(emailBody, cert);
 
     console.log(encryptedText);
 

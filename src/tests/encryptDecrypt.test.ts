@@ -4,7 +4,7 @@
 
 import "./setupTests";
 
-import { smimeDecrypt, smimeEncrypt } from "../helpers/emailFunctions";
+import { smimeDecrypt, smimeEncryptForge } from "../helpers/emailFunctions";
 import { decodeHtml, encodeHtml } from "../helpers/converters";
 
 // Import the same cert and key used within the add-in
@@ -13,14 +13,15 @@ import { cert, key } from "./certAndKey";
 const plaintext = "This is some plaintext.";
 
 test("encrypt and decrypt some plaintext", async () => {
-  const encryptedText = await smimeEncrypt(plaintext, cert);
+  const encryptedText = await smimeEncryptForge(plaintext, cert);
+  console.log(encryptedText);
   const decryptedText = await smimeDecrypt(encryptedText, key, cert);
   expect(decryptedText).toBe(plaintext);
 });
 
 // The below tests exist since we surround S/MIME text with <pre> tags to prevent Outlook from inserting its own HTML tags within the S/MIME message and messing with the message integrity when setting the message body.
 test("encrypt and decrypt some plaintext with <pre> tags surrounding", async () => {
-  const encryptedText = await smimeEncrypt(plaintext, cert);
+  const encryptedText = await smimeEncryptForge(plaintext, cert);
   const encryptedTextBody = "<pre>" + encryptedText + "</pre>";
 
   // Escape HTML encoded strings
@@ -55,7 +56,7 @@ test("encrypt and decrypt some plaintext with <pre> tags surrounding", async () 
 });
 
 test("encrypt and decrypt text surrounded by <span> and <pre> tags", async () => {
-  const encryptedText = await smimeEncrypt(plaintext, cert);
+  const encryptedText = await smimeEncryptForge(plaintext, cert);
   const encryptedTextPre = "<pre>" + encryptedText + "</pre>";
   const encryptedTextSpanPre = "<pre>" + encryptedTextPre + "</span>";
 
@@ -92,7 +93,7 @@ test("encrypt and decrypt text surrounded by <span> and <pre> tags", async () =>
 
 // Outlook HTML encodes
 test("encrypt and decrypt text surrounded by <span> and <pre> tags that has been HTML encoded", async () => {
-  const encryptedText = await smimeEncrypt(plaintext, cert);
+  const encryptedText = await smimeEncryptForge(plaintext, cert);
   // console.log(encryptedText);
   const encryptedTextHtmlEncoded = encodeHtml(encryptedText);
   // console.log(encryptedTextHtmlEncoded);
