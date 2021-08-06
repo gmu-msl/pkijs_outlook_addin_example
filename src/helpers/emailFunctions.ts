@@ -1,5 +1,5 @@
 import { Crypto } from "@peculiar/webcrypto";
-import * as asn1js from "asn1js";
+import { fromBER } from "asn1js";
 import { Convert } from "pvtsutils";
 import * as pkijs from "pkijs";
 import * as forge from "node-forge";
@@ -13,7 +13,9 @@ pkijs.setEngine(
   new pkijs.CryptoEngine({ name: engineName, crypto: crypto, subtle: crypto.subtle })
 );
 
-import { PemConverter } from "./converters";
+import { PemConverter } from "@peculiar/x509";
+
+// import { PemConverter } from "./converters";
 
 import MimeNode from "emailjs-mime-builder";
 import smimeParse from "emailjs-mime-parser";
@@ -29,10 +31,7 @@ import smimeParse from "emailjs-mime-parser";
  */
 export async function smimeEncryptForge(
   text: string,
-  certificatePem: string,
-  oaepHashAlgo: string = "SHA-256",
-  encryptionAlgo: string = "AES-CBC",
-  length: Number = 128
+  certificatePem: string
 ): Promise<string> {
   // create a p7 enveloped message
   const p7 = forge.pkcs7.createEnvelopedData();
@@ -50,12 +49,14 @@ export async function smimeEncryptForge(
   pem = pem.replace(/-----BEGIN PKCS7-----\r?\n?/, "");
   pem = pem.replace(/-----END PKCS7-----\r?\n?/, "");
 
+  const binaryPem = Buffer.from(pem, "base64");
+
   // Insert enveloped data into new Mime message
   const mimeBuilder = new MimeNode("application/pkcs7-mime; name=smime.p7m; smime-type=enveloped-data; charset=binary")
     .setHeader("content-description", "Enveloped Data")
     .setHeader("content-disposition", "attachment; filename=smime.p7m")
     .setHeader("content-transfer-encoding", "base64")
-    .setContent(pem);
+    .setContent(binaryPem);
   mimeBuilder.setHeader("from", "sender@example.com");
   mimeBuilder.setHeader("to", "recipient@example.com");
   mimeBuilder.setHeader("subject", "Example S/MIME encrypted message");
@@ -80,7 +81,7 @@ export async function smimeEncryptPKIJs(
   length: Number = 128
 ): Promise<string> {
   // Decode input certificate
-  const asn1 = asn1js.fromBER(PemConverter.decode(certificatePem)[0]);
+  const asn1 = fromBER(PemConverter.decode(certificatePem)[0]);
   const certSimpl = new pkijs.Certificate({ schema: asn1.result });
 
   const cmsEnveloped = new pkijs.EnvelopedData();
@@ -118,7 +119,7 @@ export async function smimeEncryptPKIJs(
  */
 export async function smimeDecrypt(text: string, privateKeyPem: string, certificatePem: string): Promise<string> {
   // Decode input certificate
-  let asn1 = asn1js.fromBER(PemConverter.decode(certificatePem)[0]);
+  let asn1 = fromBER(PemConverter.decode(certificatePem)[0]);
   const certSimpl = new pkijs.Certificate({ schema: asn1.result });
 
   // Decode input private key
@@ -129,7 +130,7 @@ export async function smimeDecrypt(text: string, privateKeyPem: string, certific
     const parser = smimeParse(text);
 
     // Make all CMS data
-    asn1 = asn1js.fromBER(parser.content.buffer);
+    asn1 = fromBER(parser.content.buffer);
     if (asn1.offset === -1) {
       console.error(
         'Unable to parse your data. Please check you have "Content-Type: charset=binary" in your S/MIME message'
